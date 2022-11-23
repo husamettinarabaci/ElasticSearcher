@@ -1,0 +1,52 @@
+version: "3.4"
+services:
+  elasticsearch:
+    image: elasticsearch:7.9.2
+    environment:
+       - discovery.type=single-node
+       - bootstrap.memory_lock=true
+       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+       memlock:
+         soft: -1
+         hard: -1
+    volumes:
+       - elasticsearch-volume:/usr/share/elasticsearch/data
+    ports:
+       - 9200:9200
+       - 9300:9300
+    networks:
+       - elasticstack
+  logstash:
+    image: logstash:7.9.2   
+    ports:
+      - "5000:5000"
+    volumes:
+      - logstash-volume:/etc/logstash
+    command: logstash -f /etc/logstash/conf.d/
+    environment:
+      LS_JAVA_OPTS: "-Xms256m -Xmx256m"
+    depends_on:
+      - elasticsearch
+    networks:
+      - elasticstack
+  kibana:
+    image: kibana:7.9.2
+    container_name: kibana
+    volumes:
+      - kibana-volume:/usr/share/kibana/
+    ports:
+     - 5601:5601
+    depends_on:
+      - elasticsearch
+    networks:
+      - elasticstack
+networks:
+  elasticstack:
+volumes:
+  kibana-volume:
+    external: true
+  logstash-volume:
+    external: true
+  elasticsearch-volume:
+    external: true
