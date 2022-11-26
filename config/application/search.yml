@@ -1,0 +1,9 @@
+debug: true
+cli:
+  enabled: true
+restapi:
+  enabled: true
+  host: "0.0.0.0"
+  port: "8081"
+  queryHandler: true
+  commandHandler: false

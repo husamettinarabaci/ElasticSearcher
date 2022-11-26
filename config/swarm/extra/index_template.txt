@@ -4,10 +4,10 @@ GET postgre-vehicle/_search
 DELETE postgre*
 GET postgre-vehicle/_search
 
-
 curl -XGET "http://elasticsearch:9200/postgre_vehicle/_search" -H 'Content-Type: application/json' -d'{  "query": {    "bool": {      "should": [        {          "wildcard": {            "brand": {              "value": "*iss*"            }          }        },        {          "wildcard": {            "brand": {              "value": "*iat*"            }          }        }      ],      "minimum_should_match": 1    }  },  "_source": [    "brand",    "model"  ]}'
 
 http://localhost:5601/app/dev_tools#/console
+
 PUT _index_template/postgre_templates
 {
   "index_patterns": ["postgre_*"],
