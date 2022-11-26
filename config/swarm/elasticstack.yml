@@ -6,6 +6,7 @@ services:
        - discovery.type=single-node
        - bootstrap.memory_lock=true
        - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+       - "ELASTIC_PASSWORD=elasticsearch"
     ulimits:
        memlock:
          soft: -1
@@ -16,21 +17,21 @@ services:
        - 9200:9200
        - 9300:9300
     networks:
-       - elasticstack
+       - postgre_default
   logstash:
     image: logstash:7.9.2   
     ports:
       - "5000:5000"
-    #volumes:
-      #- ../conf/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
-      #- ../conf/postgresql-42.5.0.jar:/usr/share/logstash/postgresql-42.5.0.jar
+    volumes:
+      - ../conf/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+      - ../conf/postgresql-42.5.0.jar:/usr/share/logstash/postgresql-42.5.0.jar
     command: logstash -f /usr/share/logstash/pipeline/logstash.conf --verbose
     environment:
       LS_JAVA_OPTS: "-Xms256m -Xmx256m"
     depends_on:
       - elasticsearch
     networks:
-      - elasticstack
+      - postgre_default
   kibana:
     image: kibana:7.9.2
     volumes:
@@ -40,9 +41,13 @@ services:
     depends_on:
       - elasticsearch
     networks:
-      - elasticstack
+      - postgre_default
+
+
 networks:
-  elasticstack:
+  postgre_default:
+    external:
+      name: postgre_default
 volumes:
   kibana-volume:
     external: true

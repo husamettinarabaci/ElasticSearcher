@@ -1,0 +1,132 @@
+GET _cat/indices/postgre*?v
+
+GET postgre-vehicle/_search
+DELETE postgre*
+GET postgre-vehicle/_search
+
+
+curl -XGET "http://elasticsearch:9200/postgre_vehicle/_search" -H 'Content-Type: application/json' -d'{  "query": {    "bool": {      "should": [        {          "wildcard": {            "brand": {              "value": "*iss*"            }          }        },        {          "wildcard": {            "brand": {              "value": "*iat*"            }          }        }      ],      "minimum_should_match": 1    }  },  "_source": [    "brand",    "model"  ]}'
+
+http://localhost:5601/app/dev_tools#/console
+PUT _index_template/postgre_templates
+{
+  "index_patterns": ["postgre_*"],
+  "template": {
+    "mappings": {
+      "dynamic_templates": [
+        {
+          "strings": {
+            "match_mapping_type": "string",
+            "mapping": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              },
+              "analyzer": "autocomplete_analyzer"
+            }
+          }
+        }
+      ]
+    },
+    "settings": {
+      "analysis": {
+        "filter": {
+          "autocomplete_filter": {
+            "type": "ngram",
+            "min_gram": "1",
+            "max_gram": "20"
+          }
+        },
+        "analyzer": {
+          "autocomplete_analyzer": {
+            "filter": [
+              "lowercase",
+              "autocomplete_filter",
+              "asciifolding"
+            ],
+            "type": "custom",
+            "tokenizer": "standard"
+          }
+        }
+      },
+      "index.max_ngram_diff": 50
+    }
+  }
+}
+
+GET postgre_driver
+
+GET postgre_vehicle/_search
+{
+  "query": {
+    "bool": {
+      "should": [
+        {
+          "wildcard": {
+            "brand": {
+              "value": "*iss*"
+            }
+          }
+        },
+        {
+          "wildcard": {
+            "brand": {
+              "value": "*iat*"
+            }
+          }
+        }
+      ],
+      "minimum_should_match": 1
+    }
+  },
+  "_source": [
+    "brand",
+    "model"
+  ]
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
