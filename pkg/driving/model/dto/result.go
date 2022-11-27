@@ -2,8 +2,10 @@ package pkg_driving_dto
 
 import (
 	"fmt"
+	"strings"
 
 	idsme "github.com/husamettinarabaci/ElasticSearcher/internal/domain/search/model/entity"
+	pdmps "github.com/husamettinarabaci/ElasticSearcher/pkg/driving/model/proto/search"
 )
 
 type Result struct {
@@ -44,7 +46,30 @@ func FromResultEntity(res idsme.Result) Result {
 	return Result{
 		Id:     res.Id.String(),
 		Score:  res.Score.Float64(),
-		Source: res.Source.String(),
+		Source: res.Source.CustomString(),
 		Err:    res.Err,
+	}
+}
+
+func (r Result) ToProtoResult() *pdmps.Result {
+
+	fmt.Println(strings.Repeat("=", 20))
+
+	fmt.Println(r.String())
+	fmt.Println(strings.Repeat("=", 20))
+	if r.Err != nil {
+		return &pdmps.Result{
+			Id:     "",
+			Score:  0,
+			Source: "",
+			Error:  r.Err.Error(),
+		}
+	} else {
+		return &pdmps.Result{
+			Id:     r.Id,
+			Score:  r.Score,
+			Source: r.Source,
+			Error:  "",
+		}
 	}
 }

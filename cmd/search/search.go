@@ -3,13 +3,14 @@ package main
 import (
 	"fmt"
 	"os"
+	"sync"
 
-	"github.com/gin-gonic/gin"
 	"github.com/golobby/container/v3"
-	iasac "github.com/husamettinarabaci/ElasticSearcher/internal/application/search/adapter/cqhandler"
-	iaspc "github.com/husamettinarabaci/ElasticSearcher/internal/application/search/port/cqhandler"
+	iasaq "github.com/husamettinarabaci/ElasticSearcher/internal/application/search/adapter/query"
 	iass "github.com/husamettinarabaci/ElasticSearcher/internal/application/search/service"
 	idss "github.com/husamettinarabaci/ElasticSearcher/internal/domain/search/service"
+	pdiae "github.com/husamettinarabaci/ElasticSearcher/pkg/driven/infra/adapter/elastic"
+	pdug "github.com/husamettinarabaci/ElasticSearcher/pkg/driving/usecase/grpc"
 	pdur "github.com/husamettinarabaci/ElasticSearcher/pkg/driving/usecase/restapi"
 	"gopkg.in/yaml.v2"
 )
@@ -17,19 +18,23 @@ import (
 const configPath = "config/application/search.yml"
 
 type Config struct {
-	Debug bool `yaml:"debug"`
-	Cli   struct {
-		Enabled bool `yaml:"enabled"`
-	} `yaml:"cli"`
+	Debug   bool `yaml:"debug"`
 	Restapi struct {
-		Enabled      bool   `yaml:"enabled"`
-		Host         string `yaml:"host"`
-		Port         string `yaml:"port"`
-		QueryHandler bool   `yaml:"queryHandler"`
+		Host string `yaml:"host"`
+		Port string `yaml:"port"`
 	} `yaml:"restapi"`
+	GrpcAPI struct {
+		Host string `yaml:"host"`
+		Port string `yaml:"port"`
+	} `yaml:"grpcapi"`
+	ElasticEngine struct {
+		Host string `yaml:"host"`
+		Port string `yaml:"port"`
+	} `yaml:"elastic"`
 }
 
 var AppConfig *Config
+var wg sync.WaitGroup
 
 func ReadConfig() {
 	f, err := os.Open(configPath)
@@ -48,42 +53,82 @@ func ReadConfig() {
 
 func main() {
 	ReadConfig()
-	var err error
-	c := gin.Default()
 
 	cont := container.New()
 
-	err = cont.Singleton(func() idss.SearchService {
-		return idss.NewSearchService()
+	CreateDomainContainer(&cont)
+
+	CreateInfraContainer(&cont)
+
+	CreateApplicationContainer(&cont)
+
+	CreatePresentationContainer(&cont)
+
+	fmt.Println("Started Application")
+	wg.Wait()
+}
+
+func CreateDomainContainer(cont *container.Container) {
+
+	err := cont.Singleton(func() idss.CoreService {
+		return idss.NewCoreService()
 	})
 	if err != nil {
 		panic(err)
 	}
 
-	err = cont.Singleton(func(s idss.SearchService) iass.SearchService {
-		return iass.NewSearchService(s)
+}
+
+func CreateInfraContainer(cont *container.Container) {
+	err := cont.Singleton(func() pdiae.ElasticSearchEngine {
+		return pdiae.NewElasticSearchEngine(AppConfig.ElasticEngine.Host, AppConfig.ElasticEngine.Port)
+	})
+	if err != nil {
+		panic(err)
+	}
+}
+
+func CreateApplicationContainer(cont *container.Container) {
+	err := cont.Singleton(func(s pdiae.ElasticSearchEngine) iass.EventListener {
+		return iass.NewEventListener(s)
 	})
 	if err != nil {
 		panic(err)
 	}
 
-	err = cont.Singleton(func(s iass.SearchService) iasac.QueryHandler {
-		return iasac.NewQueryHandler(s)
+	err = cont.Singleton(func(s idss.CoreService, e iass.EventListener) iass.CoreService {
+		return iass.NewCoreService(s, e)
 	})
 	if err != nil {
 		panic(err)
 	}
 
-	if AppConfig.Restapi.Enabled {
-
-		var queryHandler iaspc.QueryHandler
-		if AppConfig.Restapi.QueryHandler {
-			err = cont.Resolve(&queryHandler)
-			if err != nil {
-				panic(err)
-			}
-		}
-		pdur.NewRestAPI(c, queryHandler)
-		c.Run(AppConfig.Restapi.Host + ":" + AppConfig.Restapi.Port)
+	err = cont.Singleton(func(s iass.CoreService) iass.QueryHandler {
+		return iass.NewQueryHandler(s)
+	})
+	if err != nil {
+		panic(err)
 	}
+
+	err = cont.Singleton(func(s iass.QueryHandler) iasaq.QueryAdapter {
+		return iasaq.NewQueryAdapter(s)
+	})
+	if err != nil {
+		panic(err)
+	}
+}
+
+func CreatePresentationContainer(cont *container.Container) {
+
+	var queryPort iasaq.QueryAdapter
+	err := cont.Resolve(&queryPort)
+	if err != nil {
+		panic(err)
+	}
+
+	wg.Add(1)
+	go pdur.NewRestAPI(AppConfig.Restapi.Host, AppConfig.Restapi.Port, queryPort)
+	wg.Add(1)
+	go pdug.NewGrpcAPI(AppConfig.GrpcAPI.Host, AppConfig.GrpcAPI.Port, queryPort)
+
 }

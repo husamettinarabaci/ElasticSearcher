@@ -1,6 +1,10 @@
 package internal_domain_search_model_entity
 
-import idsmo "github.com/husamettinarabaci/ElasticSearcher/internal/domain/search/model/object"
+import (
+	"fmt"
+
+	idsmo "github.com/husamettinarabaci/ElasticSearcher/internal/domain/search/model/object"
+)
 
 type Result struct {
 	Id     idsmo.Id
@@ -9,9 +13,8 @@ type Result struct {
 	Err    error
 }
 
-// TODO: implement
 func (r Result) String() string {
-	return ""
+	return fmt.Sprintf("id: %s, score: %f, source: %s, err: %s", r.Id.String(), r.Score.Float64(), r.Source.CustomString(), r.Err)
 }
 
 func NewResult(id idsmo.Id, score idsmo.Score, source idsmo.Source, err error) Result {

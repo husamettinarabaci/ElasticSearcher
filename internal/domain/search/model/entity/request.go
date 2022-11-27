@@ -1,6 +1,10 @@
 package internal_domain_search_model_entity
 
-import idsmo "github.com/husamettinarabaci/ElasticSearcher/internal/domain/search/model/object"
+import (
+	"fmt"
+
+	idsmo "github.com/husamettinarabaci/ElasticSearcher/internal/domain/search/model/object"
+)
 
 type Request struct {
 	UId   idsmo.UId
@@ -8,9 +12,8 @@ type Request struct {
 	Query idsmo.Query
 }
 
-// TODO: implement
 func (r Request) String() string {
-	return ""
+	return fmt.Sprintf("uid: %s, index: %s, query: %s", r.UId.String(), r.Index.String(), r.Query.String())
 }
 
 func NewRequest(uid idsmo.UId, index idsmo.Index, query idsmo.Query) Request {

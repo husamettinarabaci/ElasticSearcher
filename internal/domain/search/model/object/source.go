@@ -1,10 +1,11 @@
 package internal_domain_search_model_object
 
+import "fmt"
+
 type Source map[string]interface{}
 
-// TODO: implement
-func (s Source) String() string {
-	return ""
+func (s Source) CustomString() string {
+	return fmt.Sprintf("%v", s)
 }
 
 func NewSource(source map[string]interface{}) Source {
@@ -12,9 +13,9 @@ func NewSource(source map[string]interface{}) Source {
 }
 
 func (s Source) IsEmpty() bool {
-	return s.String() == ""
+	return s.CustomString() == ""
 }
 
 func (s Source) Equals(source Source) bool {
-	return s.String() == source.String()
+	return s.CustomString() == source.CustomString()
 }

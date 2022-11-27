@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+option go_package = "github.com/husamettinarabaci/ElasticSearcher/pkg/driving/model/proto/search";
+
+package search;
+
+service Search {
+  
+  rpc Search (Request) returns (Results) {}
+  rpc SearchWildCards (WildCardRequest) returns (Results) {}
+}
+
+message Request {
+  string uid = 1;
+  string index = 2;
+  string query = 3;
+}
+
+message WildCardRequest {
+  string uid = 1;
+  string index = 2;
+  repeated WildCard wildcards = 3;
+  repeated Source sources = 4;
+}
+
+message WildCard {
+  string field = 1;
+  string value = 2;
+}
+
+message Source {
+  string source = 1;
+}
+
+message Result {
+  string id = 1;
+  double score = 2;
+  string source = 3;
+  string error = 4;
+}
+
+message Results{
+  repeated Result results = 1;
+}

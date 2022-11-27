@@ -2,28 +2,34 @@ package pkg_driving_usecase_restapi
 
 import (
 	"github.com/gin-gonic/gin"
-	iaspq "github.com/husamettinarabaci/ElasticSearcher/internal/application/search/port/cqhandler"
-	pdd "github.com/husamettinarabaci/ElasticSearcher/pkg/driving/dto"
+	iaspq "github.com/husamettinarabaci/ElasticSearcher/internal/application/search/port/query"
+	pdmd "github.com/husamettinarabaci/ElasticSearcher/pkg/driving/model/dto"
 )
 
 type RestAPI struct {
-	ginEngine    *gin.Engine
-	queryHandler iaspq.QueryHandler
+	ginEngine *gin.Engine
+	queryPort iaspq.QueryPort
 }
 
-func NewRestAPI(c *gin.Engine, qh iaspq.QueryHandler) *RestAPI {
+func NewRestAPI(host string, port string, qp iaspq.QueryPort) *RestAPI {
 	api := &RestAPI{
-		ginEngine:    c,
-		queryHandler: qh,
+		ginEngine: gin.Default(),
+		queryPort: qp,
 	}
-	if qh != nil {
-		api.ginEngine.GET("/api/v1/search", api.GetResultByRequest)
+	if qp != nil {
+		api.ginEngine.GET("/api/v1/search", api.Search)
 	}
+
+	err := api.ginEngine.Run(host + ":" + port)
+	if err != nil {
+		panic(err)
+	}
+	//TODO: wg.Done()
 	return api
 }
 
-func (api *RestAPI) GetResultByRequest(c *gin.Context) {
-	var reqDto pdd.Request
+func (api *RestAPI) Search(c *gin.Context) {
+	var reqDto pdmd.Request
 	err := c.BindJSON(&reqDto)
 	if err != nil {
 		c.JSON(500, gin.H{
@@ -31,16 +37,16 @@ func (api *RestAPI) GetResultByRequest(c *gin.Context) {
 		})
 		return
 	}
-	results, err := api.queryHandler.GetResultByRequest(c, reqDto.ToEntity())
+	results, err := api.queryPort.Search(c, reqDto.ToEntity())
 	if err != nil {
 		c.JSON(500, gin.H{
 			"error": err.Error(),
 		})
 		return
 	} else {
-		var resDtos []pdd.Result
+		var resDtos []pdmd.Result
 		for _, result := range results {
-			resDtos = append(resDtos, pdd.FromResultEntity(result))
+			resDtos = append(resDtos, pdmd.FromResultEntity(result))
 		}
 
 		c.JSON(200, gin.H{

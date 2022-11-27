@@ -5,6 +5,7 @@ import (
 
 	idsme "github.com/husamettinarabaci/ElasticSearcher/internal/domain/search/model/entity"
 	idsmo "github.com/husamettinarabaci/ElasticSearcher/internal/domain/search/model/object"
+	pdmps "github.com/husamettinarabaci/ElasticSearcher/pkg/driving/model/proto/search"
 )
 
 type Request struct {
@@ -44,5 +45,13 @@ func (r Request) ToEntity() idsme.Request {
 		UId:   idsmo.NewUId(r.UId),
 		Index: idsmo.NewIndex(r.Index),
 		Query: idsmo.NewQuery(r.Query),
+	}
+}
+
+func FromProtoRequest(res *pdmps.Request) Request {
+	return Request{
+		UId:   res.Uid,
+		Index: res.Index,
+		Query: res.Query,
 	}
 }
